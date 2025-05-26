@@ -1,12 +1,12 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import loginRouter from './routes/loginRouter/index.js';
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
-})
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(loginRouter)
 app.listen(3000, () => {
   console.log('Server started on port 3000');
 })
