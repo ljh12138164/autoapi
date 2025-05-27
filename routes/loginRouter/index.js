@@ -13,11 +13,11 @@ import db from "../../config/db.js"
 const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
-
+// 登录
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
-    if(!username || !password) {
-        res.status(400).json({ message: '用户名或密码不能为空', code: 400  });
+    if (!username || !password) {
+        res.status(400).json({ message: '用户名或密码不能为空', code: 400 });
         return;
     }
     db('users').where({ username, password }).then((rows) => {
@@ -28,4 +28,22 @@ router.post('/login', (req, res) => {
         }
     })
 });
+
+// 注册
+router.post('/register', (req, res) => {
+    const { username, password, email } = req.body;
+    if (!username || !password || !email) {
+        res.status(400).json({ message: '用户名或密码或邮箱不能为空', code: 400 });
+        return;
+    }
+    db('users').where({ username }).orWhere({ email }).then((rows) => {
+        if (rows.length > 0) {
+            res.status(400).json({ message: '用户名或邮箱已存在', code: 400 });
+        } else {
+            db('users').insert({ username, password, email }).then(() => {
+                res.json({ message: '注册成功', code: 201 });
+            })
+        }
+    })
+})
 export default router;
