@@ -1,5 +1,6 @@
 import express from 'express';
 import db from "../../config/db.js"
+import { success, error } from "../../utils/response.js"
 // 创建用户表
 // db.schema.createTableIfNotExists('users', (table) => {
 //     table.increments('id').primary().comment('用户ID');
@@ -17,14 +18,13 @@ router.use(express.urlencoded({ extended: true }));
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        res.status(400).json({ message: '用户名或密码不能为空', code: 400 });
-        return;
+        error(res,  '用户名或密码不能为空', 400);
     }
     db('users').where({ username, password }).then((rows) => {
         if (rows.length > 0) {
-            res.json({ message: '登录成功', code: 201 });
+            success(res, null, '登录成功', 201);
         } else {
-            res.status(401).json({ message: '用户名或密码错误', code: 401 });
+            error(res, '用户名或密码错误', 201);
         }
     })
 });
@@ -33,15 +33,14 @@ router.post('/login', (req, res) => {
 router.post('/register', (req, res) => {
     const { username, password, email } = req.body;
     if (!username || !password || !email) {
-        res.status(400).json({ message: '用户名或密码或邮箱不能为空', code: 400 });
-        return;
+        error(res, '用户名或密码或邮箱不能为空', 400);
     }
     db('users').where({ username }).orWhere({ email }).then((rows) => {
         if (rows.length > 0) {
-            res.status(400).json({ message: '用户名或邮箱已存在', code: 400 });
+            error(res, '用户名或邮箱已存在', 400);
         } else {
             db('users').insert({ username, password, email }).then(() => {
-                res.json({ message: '注册成功', code: 201 });
+                success(res, null, '注册成功', 201);
             })
         }
     })
