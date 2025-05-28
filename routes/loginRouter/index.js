@@ -6,6 +6,15 @@ import { generateAccessToken, generateRefreshToken,verifyRefreshToken, getCookie
 const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
+// db.schema.createTableIfNotExists('users', (table) => {
+//     table.increments('id').primary();
+//     table.string('username').notNullable();
+//     table.string('password').notNullable();
+//     table.string('email').notNullable();
+//     table.timestamp('created_at').defaultTo(db.fn.now());
+// }).then(() => {
+//     console.log('users表已创建');
+// })
 
 // 登录
 router.post('/login', (req, res) => {
