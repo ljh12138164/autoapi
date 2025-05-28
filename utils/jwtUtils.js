@@ -1,8 +1,7 @@
 // 导入jsonwebtoken库
-const jwt = require('jsonwebtoken');
-
+import jwt from 'jsonwebtoken';
+import { ACCESS_TOKEN, REFRESH_TOKEN, COOKIE_OPTIONS } from '../config/jwt.js';
 // 导入JWT配置
-const { ACCESS_TOKEN, REFRESH_TOKEN, COOKIE_OPTIONS } = require('../config/jwt');
 
 /**
  * 生成Access Token
