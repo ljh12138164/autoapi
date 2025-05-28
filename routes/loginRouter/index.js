@@ -82,7 +82,7 @@ router.post('/refresh-token', (req, res) => {
 // 退出
 router.post('/logout', (req, res) => {
     // 清除Refresh Token
-    // res.clearCookie('refreshToken', getCookieOptions());
+    res.clearCookie('refreshToken', getCookieOptions());
     success(res, null, '退出成功', 200);
 })
 
