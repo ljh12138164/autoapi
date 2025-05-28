@@ -26,7 +26,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // 解析Cookie
 app.use(cookieParser());
-app.use("/api", loginRouter)
 
 // 注册应用级中间件
 app.use((req, res, next) => {
@@ -35,6 +34,7 @@ app.use((req, res, next) => {
   }
   return authMiddleware(req, res, next)
 })
+app.use(loginRouter)
 
 // 404处理（放在最后）
 app.use((req, res) => {

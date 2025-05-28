@@ -37,7 +37,7 @@ router.post('/login', (req, res) => {
             // 返回Access Token给客户端
             success(res, { accessToken }, '登录成功', 201);
         } else {
-            error(res, '用户名或密码错误', 201);
+            error(res, '用户名或密码错误', 400);
         }
     })
 });
@@ -78,5 +78,12 @@ router.post('/refresh-token', (req, res) => {
     const newAccessToken = generateAccessToken({ userId: payload.userId });
     success(res, { accessToken: newAccessToken }, 'Token刷新成功', 200);
 });
+
+// 退出
+router.post('/logout', (req, res) => {
+    // 清除Refresh Token
+    // res.clearCookie('refreshToken', getCookieOptions());
+    success(res, null, '退出成功', 200);
+})
 
 export default router;
