@@ -1,16 +1,6 @@
 import express from 'express';
 import db from "../../config/db.js"
 import { success, error } from "../../utils/response.js"
-// 创建用户表
-// db.schema.createTableIfNotExists('users', (table) => {
-//     table.increments('id').primary().comment('用户ID');
-//     table.string('username').notNullable().unique().comment('用户名');
-//     table.string('password').notNullable().comment('密码');
-//     table.string('email').notNullable().unique().comment('邮箱');
-//     table.timestamps();
-// }).then(() => {
-//     console.log('Table created');
-// })
 const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
