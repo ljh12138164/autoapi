@@ -76,7 +76,7 @@ router.post('/refresh-token', (req, res) => {
 
     // 生成新的Access Token
     const newAccessToken = generateAccessToken({ userId: payload.userId });
-    success(res, { accessToken: newAccessToken }, 'Token刷新成功', 200);
+    success(res, { accessToken: newAccessToken }, 'Token刷新成功', 201);
 });
 
 // 退出
