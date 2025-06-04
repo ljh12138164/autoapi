@@ -30,12 +30,18 @@ router.post('/login', (req, res) => {
             // 生成Access Token和Refresh Token
             const accessToken = generateAccessToken({ userId: user.id });
             const refreshToken = generateRefreshToken({ userId: user.id });
-
+            const data = {
+                accessToken,
+                userInfo:{
+                    id:user.id,
+                    username:user.username,
+                    email:user.email
+                }
+            }
             // 将Refresh Token设置到HttpOnly Cookie中
             res.cookie('refreshToken', refreshToken, getCookieOptions());
-
             // 返回Access Token给客户端
-            success(res, { accessToken }, '登录成功', 201);
+            success(res, data, '登录成功', 200);
         } else {
             error(res, '用户名或密码错误', 400);
         }
@@ -85,5 +91,4 @@ router.post('/logout', (req, res) => {
     res.clearCookie('refreshToken', getCookieOptions());
     success(res, null, '退出成功', 200);
 })
-
 export default router;
