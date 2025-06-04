@@ -18,12 +18,13 @@ router.use(express.urlencoded({ extended: true }));
 
 // 登录
 router.post('/login', (req, res) => {
+    
     const { username, password } = req.body;
     if (!username || !password) {
         error(res, '用户名或密码不能为空', 400);
         return;
     }
-
+    
     db('users').where({ username, password }).then((rows) => {
         if (rows.length > 0) {
             const user = rows[0];
