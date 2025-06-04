@@ -50,35 +50,49 @@ router.get('/stats', authMiddleware, async (req, res) => {
     try {
         // 从中间件中获取当前登录用户的ID
         const userId = req.userId;
+        console.log("当前登录用户ID：", userId);
 
         // 查询1：获取当前用户创建的表单总数
         // 在forms表中查找creator_id等于当前用户ID的记录数量
         const myFormsCount = await db('forms')
-            .where('creator_id', userId)    // 筛选条件：创建者是当前用户
+            .where('user_id', userId)    // 筛选条件：创建者是当前用户
             .count('id as count')           // 计算记录数量
             .first();                       // 获取第一条结果
+        console.log("当前用户创建的表单数：", myFormsCount);
 
         // 查询2：获取今日提交数
         // 首先设置今日的开始时间（00:00:00）
         const today = new Date();
         today.setHours(0, 0, 0, 0);        // 设置为今天的0点
+        // 直接查询，不需要联表
+        const todaySubmissions = await db('form_submissions')
+            .where('user_id', userId)  // 直接根据用户ID查询
+            .where('submitted_at', '>=', today)  // 今天的提交
+            .count('id as count')
+            .first();
 
+        const totalSubmissions = await db('form_submissions')
+            .where('user_id', userId)  // 直接根据用户ID查询
+            .count('id as count')
+            .first();
         // 联表查询：form_submissions表 JOIN forms表
         // 目的：找到当前用户的表单在今天收到的提交数
-        const todaySubmissions = await db('form_submissions')
-            .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
-            .where('forms.creator_id', userId)                      // 只看当前用户的表单
-            .where('form_submissions.created_at', '>=', today)      // 只看今天的提交
-            .count('form_submissions.id as count')                  // 计算提交数量
-            .first();
+        // const todaySubmissions = await db('form_submissions')
+        //     .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
+        //     .where('forms.user_id', userId)                      // 只看当前用户的表单
+        //     .where('form_submissions.submitted_at', '>=', today)      // 只看今天的提交
+        //     .count('form_submissions.id as count')                  // 计算提交数量
+        //     .first();
+        // console.log("todaySubmissions",todaySubmissions);
 
-        // 查询3：获取总提交数
-        // 联表查询：获取当前用户所有表单的历史提交总数
-        const totalSubmissions = await db('form_submissions')
-            .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
-            .where('forms.creator_id', userId)                      // 只看当前用户的表单
-            .count('form_submissions.id as count')                  // 计算所有提交数量
-            .first();
+        // // 查询3：获取总提交数
+        // // 联表查询：获取当前用户所有表单的历史提交总数
+        // const totalSubmissions = await db('form_submissions')
+        //     .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
+        //     .where('forms.user_id', userId)                      // 只看当前用户的表单
+        //     .count('form_submissions.id as count')                  // 计算所有提交数量
+        //     .first();
+        // console.log("totalSubmissions",totalSubmissions);
 
         // 组装统计数据对象
         const stats = {
@@ -289,7 +303,7 @@ const logActivity = async (userId, activityType, description, relatedId = null) 
             related_id: relatedId,                                     // 关联ID（可选）
             created_at: new Date()                                     // 记录时间
         });
-    } catch (err) { 
+    } catch (err) {
         // 记录活动失败不影响主要业务流程，只记录错误日志
         console.error('记录用户活动失败:', err);
     }

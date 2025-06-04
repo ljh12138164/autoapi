@@ -216,17 +216,3 @@ export const initDatabase = async () => {
     }
 };
 initDatabase();
-// 如果直接运行此文件，则执行初始化
-if (import.meta.url === `file://${process.argv[1]}`) {
-    initDatabase()
-        .then(() => {
-            console.log('✅ 初始化完成，可以开始测试了！');
-            process.exit(0);
-        })
-        .catch((error) => {
-            console.error('❌ 初始化失败:', error);
-            process.exit(1);
-        });
-}
-
-export default { initDatabase };
