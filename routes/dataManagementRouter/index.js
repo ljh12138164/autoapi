@@ -29,7 +29,6 @@ const authMiddleware = (req, res, next) => {
     next();
 };
 // 获取提交表单列表
-// 获取提交表单列表
 router.get('/submit-form', authMiddleware, async (req, res) => {
     try {
         // 获取分页参数
@@ -81,4 +80,27 @@ router.get('/submit-form', authMiddleware, async (req, res) => {
         return error(res, '获取提交数据失败', 500);
     }
 });
+
+router.delete('/submit-form', async (req, res) => {
+    try {
+      // 从查询参数获取ID数组（格式：ids=1,2,3）
+      const ids = req.query.ids?.split(',').map(Number) || [];
+      if (!ids.length) {
+        return error(res, '请至少选择一条记录', 400);
+      }
+  
+      const deletedCount = await db('form_submissions')
+        .whereIn('id', ids)  // 使用 whereIn 批量删除
+        .del();
+  
+      if (deletedCount === 0) {
+        return error(res, '未找到匹配的记录', 404);
+      }
+  
+      return success(res, null, `成功删除 ${deletedCount} 条记录`);
+    } catch (err) {
+      console.error('批量删除失败:', err);
+      return error(res, '批量删除失败', 500);
+    }
+  });
 export default router;
