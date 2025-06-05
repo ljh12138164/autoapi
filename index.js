@@ -7,6 +7,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import loginRouter from './routes/loginRouter/index.js';
 import dashboardRouter from './routes/dashboardRouter/index.js';
+import dataManagementRouter from './routes/dataManagementRouter/index.js';
 // 导入关于权限中间件
 import authMiddleware from './middleware/authMiddleware.js';
 import { error } from './utils/response.js';
@@ -37,6 +38,7 @@ app.use((req, res, next) => {
 })
 app.use(loginRouter)
 app.use('/dashboard',dashboardRouter)
+app.use(dataManagementRouter)
 // 404处理（放在最后）
 app.use((req, res) => {
   error(res, '接口不存在', 404);

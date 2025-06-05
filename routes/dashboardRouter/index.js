@@ -181,7 +181,7 @@ router.get('/recent-activities', authMiddleware, async (req, res) => {
             id: activity.id,                                           // 活动ID
             type: 'submission',                                        // 活动类型：提交
             title: `收到新的表单提交`,                                    // 活动标题
-            submittedDate: activity.submitted_at.toISOString().split('T')[0]                          // 活动时间
+            submittedDate: activity.submitted_at.toISOString().replace('T', ' ').slice(0, 19),                       // 活动时间
         }));
 
         success(res, formattedActivities, '获取最近活动成功');
