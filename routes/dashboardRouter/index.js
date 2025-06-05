@@ -50,16 +50,11 @@ router.get('/stats', authMiddleware, async (req, res) => {
     try {
         // 从中间件中获取当前登录用户的ID
         const userId = req.userId;
-        console.log("当前登录用户ID：", userId);
-
-        // 查询1：获取当前用户创建的表单总数
         // 在forms表中查找creator_id等于当前用户ID的记录数量
         const myFormsCount = await db('forms')
             .where('user_id', userId)    // 筛选条件：创建者是当前用户
             .count('id as count')           // 计算记录数量
             .first();                       // 获取第一条结果
-        console.log("当前用户创建的表单数：", myFormsCount);
-
         // 查询2：获取今日提交数
         // 首先设置今日的开始时间（00:00:00）
         const today = new Date();
@@ -75,25 +70,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
             .where('user_id', userId)  // 直接根据用户ID查询
             .count('id as count')
             .first();
-        // 联表查询：form_submissions表 JOIN forms表
-        // 目的：找到当前用户的表单在今天收到的提交数
-        // const todaySubmissions = await db('form_submissions')
-        //     .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
-        //     .where('forms.user_id', userId)                      // 只看当前用户的表单
-        //     .where('form_submissions.submitted_at', '>=', today)      // 只看今天的提交
-        //     .count('form_submissions.id as count')                  // 计算提交数量
-        //     .first();
-        // console.log("todaySubmissions",todaySubmissions);
-
-        // // 查询3：获取总提交数
-        // // 联表查询：获取当前用户所有表单的历史提交总数
-        // const totalSubmissions = await db('form_submissions')
-        //     .join('forms', 'form_submissions.form_id', 'forms.id')  // 关联表单提交和表单
-        //     .where('forms.user_id', userId)                      // 只看当前用户的表单
-        //     .count('form_submissions.id as count')                  // 计算所有提交数量
-        //     .first();
-        // console.log("totalSubmissions",totalSubmissions);
-
         // 组装统计数据对象
         const stats = {
             myForms: parseInt(myFormsCount.count) || 0,           // 我的表单数（转为整数，默认0）
@@ -115,50 +91,65 @@ router.get('/stats', authMiddleware, async (req, res) => {
  * 路由：GET /api/dashboard/trends?days=7
  * 功能：返回指定天数内每天的表单提交数量，用于绘制趋势图
  * 参数：days - 查询天数（默认7天）
+ * 参数：
  * 返回：每日提交数据数组 [{date: '2024-01-01', count: 5}, ...]
  */
 router.get('/trends', authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
-        // 从查询参数中获取天数，默认为7天
-        const { days = 7 } = req.query;
-
-        // 计算查询的日期范围
-        const endDate = new Date();                                    // 结束日期：今天
-        const startDate = new Date();                                  // 开始日期
-        startDate.setDate(endDate.getDate() - parseInt(days) + 1);    // 往前推指定天数
-        startDate.setHours(0, 0, 0, 0);                              // 设置为当天0点
-
+        // 支持两种查询方式：
+        // 方式1：传入天数 ?days=7
+        // 方式2：传入日期范围 ?startDate=2025-06-05&endDate=2025-06-07
+        const { days, startDate: startDateParam, endDate: endDateParam } = req.query;
+        
+        let startDate, endDate;
+        
+        if (startDateParam && endDateParam) {
+            // 使用传入的日期范围
+            startDate = new Date(startDateParam);
+            endDate = new Date(endDateParam);
+            startDate.setHours(0, 0, 0, 0);  // 设置为当天0点
+            endDate.setHours(23, 59, 59, 999);  // 设置为当天23:59:59
+        } else {
+            // 使用天数方式（保持向后兼容）
+            const daysCount = parseInt(days) || 7;
+            endDate = new Date();
+            startDate = new Date();
+            startDate.setDate(endDate.getDate() - daysCount + 1);
+            startDate.setHours(0, 0, 0, 0);
+        }
+        
+        // 计算实际查询的天数（用于后面填充缺失日期）
+        const actualDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        
         // 查询指定日期范围内的每日提交数据
-        const trendsData = await db('form_submissions')
-            .join('forms', 'form_submissions.form_id', 'forms.id')     // 关联表单
-            .where('forms.creator_id', userId)                         // 只看当前用户的表单
-            .where('form_submissions.created_at', '>=', startDate)     // 时间范围筛选
+        const trendsData = await db('forms')
+            .where('forms.user_id', userId)
+            .where('forms.created_at', '>=', startDate)
+            .where('forms.created_at', '<=', endDate)
             .select(
-                db.raw('DATE(form_submissions.created_at) as date'),   // 提取日期部分
-                db.raw('COUNT(*) as count')                            // 计算每日数量
+                db.raw('DATE(forms.created_at) as date'),
+                db.raw('COUNT(*) as count')
             )
-            .groupBy(db.raw('DATE(form_submissions.created_at)'))      // 按日期分组
-            .orderBy('date');                                          // 按日期排序
-
-        // 填充缺失的日期（某些日期可能没有提交，需要补0）
+            .groupBy(db.raw('DATE(forms.created_at)'))
+            .orderBy('date');
+            
+        // 填充缺失的日期
         const result = [];
-        for (let i = 0; i < parseInt(days); i++) {
-            // 计算当前循环的日期
+        for (let i = 0; i < actualDays; i++) {
             const currentDate = new Date(startDate);
             currentDate.setDate(startDate.getDate() + i);
-            const dateStr = currentDate.toISOString().split('T')[0];   // 格式化为YYYY-MM-DD
-
-            // 查找数据库中是否有这一天的数据
-            const existingData = trendsData.find(item => item.date === dateStr);
-
-            // 添加到结果数组（有数据用实际数量，没数据用0）
+            const dateStr = currentDate.toISOString().split('T')[0];
+            
+            const existingData = trendsData.find(item => item.date.toISOString().split('T')[0] === dateStr);
+            console.log(existingData);
+            
             result.push({
                 date: dateStr,
                 count: existingData ? parseInt(existingData.count) : 0
             });
         }
-
+        
         success(res, result, '获取趋势数据成功');
     } catch (err) {
         console.error('获取趋势数据失败:', err);
@@ -181,17 +172,18 @@ router.get('/recent-activities', authMiddleware, async (req, res) => {
 
         // 查询最近的表单提交活动
         const activities = await db('form_submissions')
-            .join('forms', 'form_submissions.form_id', 'forms.id')     // 关联表单信息
+            .join('forms', 'form_submissions.user_id', 'forms.user_id')     // 关联表单信息
             .where('forms.creator_id', userId)                         // 只看当前用户的表单
             .select(
-                'form_submissions.id',                                 // 提交记录ID
-                'form_submissions.created_at',                         // 提交时间
-                'forms.title as form_title',                           // 表单标题
+                'form_submissions.user_id',                                 // 提交记录ID
+                'form_submissions.submitted_at',                         // 提交时间
+                'forms.title as form_title',                          // 表单标题
                 'forms.id as form_id'                                  // 表单ID
             )
-            .orderBy('form_submissions.created_at', 'desc')            // 按时间倒序（最新的在前）
+            .orderBy('form_submissions.submitted_at', 'desc')            // 按时间倒序（最新的在前）
             .limit(parseInt(limit));                                   // 限制返回数量
-
+            console.log(activities);
+            
         // 格式化活动数据，转换为前端需要的格式
         const formattedActivities = activities.map(activity => ({
             id: activity.id,                                           // 活动ID

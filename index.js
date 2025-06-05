@@ -36,7 +36,7 @@ app.use((req, res, next) => {
   return authMiddleware(req, res, next)
 })
 app.use(loginRouter)
-app.use(dashboardRouter)
+app.use('/dashboard',dashboardRouter)
 // 404处理（放在最后）
 app.use((req, res) => {
   error(res, '接口不存在', 404);
