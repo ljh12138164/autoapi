@@ -101,9 +101,9 @@ router.get('/trends', authMiddleware, async (req, res) => {
         // 方式1：传入天数 ?days=7
         // 方式2：传入日期范围 ?startDate=2025-06-05&endDate=2025-06-07
         const { days, startDate: startDateParam, endDate: endDateParam } = req.query;
-        
+
         let startDate, endDate;
-        
+
         if (startDateParam && endDateParam) {
             // 使用传入的日期范围
             startDate = new Date(startDateParam);
@@ -118,10 +118,10 @@ router.get('/trends', authMiddleware, async (req, res) => {
             startDate.setDate(endDate.getDate() - daysCount + 1);
             startDate.setHours(0, 0, 0, 0);
         }
-        
+
         // 计算实际查询的天数（用于后面填充缺失日期）
         const actualDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-        
+
         // 查询指定日期范围内的每日提交数据
         const trendsData = await db('forms')
             .where('forms.user_id', userId)
@@ -133,23 +133,21 @@ router.get('/trends', authMiddleware, async (req, res) => {
             )
             .groupBy(db.raw('DATE(forms.created_at)'))
             .orderBy('date');
-            
+
         // 填充缺失的日期
         const result = [];
         for (let i = 0; i < actualDays; i++) {
             const currentDate = new Date(startDate);
             currentDate.setDate(startDate.getDate() + i);
             const dateStr = currentDate.toISOString().split('T')[0];
-            
+
             const existingData = trendsData.find(item => item.date.toISOString().split('T')[0] === dateStr);
-            console.log(existingData);
-            
             result.push({
                 date: dateStr,
                 count: existingData ? parseInt(existingData.count) : 0
             });
         }
-        
+
         success(res, result, '获取趋势数据成功');
     } catch (err) {
         console.error('获取趋势数据失败:', err);
@@ -172,26 +170,21 @@ router.get('/recent-activities', authMiddleware, async (req, res) => {
 
         // 查询最近的表单提交活动
         const activities = await db('form_submissions')
-            .join('forms', 'form_submissions.user_id', 'forms.user_id')     // 关联表单信息
-            .where('forms.creator_id', userId)                         // 只看当前用户的表单
+            .where('form_submissions.user_id', userId)                         // 只看当前用户的表单
             .select(
-                'form_submissions.user_id',                                 // 提交记录ID
+                'form_submissions.id',                                 // 提交记录ID
                 'form_submissions.submitted_at',                         // 提交时间
-                'forms.title as form_title',                          // 表单标题
-                'forms.id as form_id'                                  // 表单ID
             )
             .orderBy('form_submissions.submitted_at', 'desc')            // 按时间倒序（最新的在前）
             .limit(parseInt(limit));                                   // 限制返回数量
-            console.log(activities);
-            
+        console.log(activities);
+
         // 格式化活动数据，转换为前端需要的格式
         const formattedActivities = activities.map(activity => ({
             id: activity.id,                                           // 活动ID
             type: 'submission',                                        // 活动类型：提交
             title: `收到新的表单提交`,                                    // 活动标题
-            description: `表单「${activity.form_title}」收到新的提交`,     // 活动描述
-            form_id: activity.form_id,                                 // 关联的表单ID
-            created_at: activity.created_at                            // 活动时间
+            submittedDate: activity.submitted_at.toISOString().split('T')[0]                          // 活动时间
         }));
 
         success(res, formattedActivities, '获取最近活动成功');
