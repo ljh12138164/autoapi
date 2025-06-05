@@ -156,11 +156,10 @@ router.get('/trends', authMiddleware, async (req, res) => {
 });
 
 /**
- * 获取最近活动接口
+ * 获取最近提交记录接口
  * 路由：GET /api/dashboard/recent-activities?limit=10
- * 功能：获取用户表单的最近提交活动记录
+ * 功能：获取用户表单的最近提交记录
  * 参数：limit - 返回记录数量（默认10条）
- * 返回：活动记录数组，包含活动类型、描述、时间等信息
  */
 router.get('/recent-activities', authMiddleware, async (req, res) => {
     try {
@@ -170,15 +169,13 @@ router.get('/recent-activities', authMiddleware, async (req, res) => {
 
         // 查询最近的表单提交活动
         const activities = await db('form_submissions')
-            .where('form_submissions.user_id', userId)                         // 只看当前用户的表单
+            .where('form_submissions.user_id', userId)
             .select(
-                'form_submissions.id',                                 // 提交记录ID
-                'form_submissions.submitted_at',                         // 提交时间
+                'form_submissions.id',
+                'form_submissions.submitted_at',
             )
-            .orderBy('form_submissions.submitted_at', 'desc')            // 按时间倒序（最新的在前）
-            .limit(parseInt(limit));                                   // 限制返回数量
-        console.log(activities);
-
+            .orderBy('form_submissions.submitted_at', 'desc')
+            .limit(parseInt(limit));
         // 格式化活动数据，转换为前端需要的格式
         const formattedActivities = activities.map(activity => ({
             id: activity.id,                                           // 活动ID
