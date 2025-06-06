@@ -31,15 +31,29 @@ const authMiddleware = (req, res, next) => {
 // 获取提交表单列表
 router.get('/submit-form', authMiddleware, async (req, res) => {
     try {
-        // 获取分页参数
-        const { pageSize = 10, pageNum = 1 } = req.query;
+        // 获取分页参数和搜索参数
+        const { pageSize = 10, pageNum = 1, title, submitDate } = req.query;
         // 计算偏移量
         const offset = (pageNum - 1) * pageSize;
         
-        // 查询用户创建的表单的提交数据
-        const row = await db('form_submissions')
+        // 构建基础查询
+        let query = db('form_submissions')
             .join('forms', 'form_submissions.form_id', 'forms.id')
-            .where('form_submissions.user_id', '=', req.userId)  // 确保只查询当前用户创建的表单
+            .where('form_submissions.user_id', '=', req.userId);
+        
+        // 添加标题搜索条件（模糊搜索）
+        if (title && title.trim()) {
+            query = query.where('forms.title', 'like', `%${title.trim()}%`);
+        }
+        
+        // 添加提交时间搜索条件（按日期模糊搜索）
+        if (submitDate && submitDate.trim()) {
+            // 如果传入的是年月日格式（如：2025-06-05），则搜索该日期的所有记录
+            query = query.whereRaw('DATE(form_submissions.submitted_at) = ?', [submitDate.trim()]);
+        }
+        
+        // 查询用户创建的表单的提交数据
+        const row = await query
             .select(
                 'form_submissions.submission_data',
                 'form_submissions.id',
@@ -50,10 +64,21 @@ router.get('/submit-form', authMiddleware, async (req, res) => {
             .offset(offset)
             .limit(parseInt(pageSize));
         
-        // 获取总数用于分页
-        const totalResult = await db('form_submissions')
+        // 获取总数用于分页（使用相同的搜索条件）
+        let countQuery = db('form_submissions')
             .join('forms', 'form_submissions.form_id', 'forms.id')
-            .where('form_submissions.user_id', '=', req.userId)
+            .where('form_submissions.user_id', '=', req.userId);
+        
+        // 添加相同的搜索条件到计数查询
+        if (title && title.trim()) {
+            countQuery = countQuery.where('forms.title', 'like', `%${title.trim()}%`);
+        }
+        
+        if (submitDate && submitDate.trim()) {
+            countQuery = countQuery.whereRaw('DATE(form_submissions.submitted_at) = ?', [submitDate.trim()]);
+        }
+        
+        const totalResult = await countQuery
             .count('form_submissions.id as total')
             .first();
         
@@ -63,25 +88,22 @@ router.get('/submit-form', authMiddleware, async (req, res) => {
             title: item.title,
             submitTime: item.submitted_at.toISOString().replace('T', ' ').slice(0, 19),
             data: item.submission_data,
-        }))
+        }));
+        
         // 返回成功响应
         return success(res, {
             submittedDate,
-            total
-            // pagination: {
-            //     pageNum: parseInt(pageNum),
-            //     pageSize: parseInt(pageSize),
-            //     total,
-            //     totalPages: Math.ceil(total / pageSize)
-            // }
+            total,
+            searchParams: { title, submitDate }  // 返回搜索参数，方便前端显示
         }, '获取提交数据成功');
         
     } catch (err) {
+        console.error('获取提交数据失败:', err);
         return error(res, '获取提交数据失败', 500);
     }
 });
 
-router.delete('/submit-form', async (req, res) => {
+router.delete('/submit-form',authMiddleware, async (req, res) => {
     try {
       // 从查询参数获取ID数组（格式：ids=1,2,3）
       const ids = req.query.ids?.split(',').map(Number) || [];
