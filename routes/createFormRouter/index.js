@@ -51,4 +51,33 @@ router.get('/create-form', authMiddleware,async (req, res) => {
     }
 });
 
+// 添加创建表单
+router.post('/create-form', authMiddleware, async (req, res) => {
+    try {
+        // 从请求体中获取title和描述
+        const { title, description } = req.body;
+        
+        // 验证必填字段
+        if (!title || title.trim() === '') {
+            return error(res, '表单标题不能为空', 400);
+        }
+        
+        // 准备插入的数据
+        const formData = {
+            title: title.trim(),
+            description: description ? description.trim() : '', // 描述可以为空
+            user_id: req.userId,
+        };
+        // 插入数据到数据库
+        await db('forms').insert(formData);
+        
+        // 返回创建成功的响应，包含新创建的表单ID
+        return success(res, null, '创建表单成功',201);
+        
+    } catch (err) {
+        console.error('创建表单失败:', err);
+        return error(res, '创建表单失败', 500);
+    }
+});
+
 export default router;
