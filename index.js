@@ -7,6 +7,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import loginRouter from './routes/loginRouter/index.js';
 import dashboardRouter from './routes/dashboardRouter/index.js';
+import createFormRouter from './routes/createFormRouter/index.js';
 import dataManagementRouter from './routes/dataManagementRouter/index.js';
 // 导入关于权限中间件
 import authMiddleware from './middleware/authMiddleware.js';
@@ -36,9 +37,14 @@ app.use((req, res, next) => {
   }
   return authMiddleware(req, res, next)
 })
+// 登录
 app.use(loginRouter)
+// 仪表盘
 app.use('/dashboard',dashboardRouter)
+// 数据管理
 app.use(dataManagementRouter)
+// 表单设计
+app.use(createFormRouter)
 // 404处理（放在最后）
 app.use((req, res) => {
   error(res, '接口不存在', 404);
