@@ -79,5 +79,15 @@ router.post('/create-form', authMiddleware, async (req, res) => {
         return error(res, '创建表单失败', 500);
     }
 });
+// 删除创建表单
+router.delete('/create-form/:id',authMiddleware,async(req,res)=>{
+    const {id} = req.params
+    try{
+        await db('forms').where("id",id).del()
+        return success(res,null,'删除表单成功')
+    }catch(err){
+        return error(res,'删除表单失败',500)
+    }
+})
 
 export default router;
