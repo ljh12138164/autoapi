@@ -2,7 +2,6 @@
 import express from 'express';
 import db from "../../config/db.js";
 import { success, error } from "../../utils/response.js";
-import { verifyAccessToken } from "../../utils/jwtUtils.js";
 
 const router = express.Router();
 
@@ -11,42 +10,12 @@ router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
 /**
- * 身份验证中间件
- * 作用：验证用户是否已登录，并提取用户ID
- * 流程：
- * 1. 从请求头中获取Authorization字段的Bearer Token
- * 2. 验证Token的有效性
- * 3. 如果有效，将用户ID存储到req.userId中供后续使用
- * 4. 如果无效，返回401错误
- */
-const authMiddleware = (req, res, next) => {
-    // 从请求头中提取Token（去掉"Bearer "前缀）
-    const token = req.headers.authorization?.replace('Bearer ', '');
-
-    // 检查是否提供了Token
-    if (!token) {
-        return error(res, '未提供访问令牌', 401);
-    }
-
-    // 验证Token的有效性，获取用户信息
-    const payload = verifyAccessToken(token);
-    if (!payload) {
-        return error(res, '访问令牌无效或已过期', 401);
-    }
-
-    // 将用户ID存储到请求对象中，供后续路由使用
-    req.userId = payload.userId;
-    // 继续执行下一个中间件或路由处理函数
-    next();
-};
-
-/**
  * 获取仪表盘统计数据接口
  * 路由：GET /api/dashboard/stats
  * 功能：返回用户的核心统计数据
  * 返回数据：我的表单数、今日提交数、总提交数
  */
-router.get('/stats', authMiddleware, async (req, res) => {
+router.get('/stats', async (req, res) => {
     try {
         // 从中间件中获取当前登录用户的ID
         const userId = req.userId;
@@ -94,7 +63,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
  * 参数：
  * 返回：每日提交数据数组 [{date: '2024-01-01', count: 5}, ...]
  */
-router.get('/trends', authMiddleware, async (req, res) => {
+router.get('/trends', async (req, res) => {
     try {
         const userId = req.userId;
         // 支持两种查询方式：
@@ -161,7 +130,7 @@ router.get('/trends', authMiddleware, async (req, res) => {
  * 功能：获取用户表单的最近提交记录
  * 参数：limit - 返回记录数量（默认10条）
  */
-router.get('/recent-activities', authMiddleware, async (req, res) => {
+router.get('/recent-activities', async (req, res) => {
     try {
         const userId = req.userId;
         // 从查询参数中获取限制数量，默认10条
@@ -198,7 +167,7 @@ router.get('/recent-activities', authMiddleware, async (req, res) => {
  * 参数：page - 页码（默认1），limit - 每页数量（默认10）
  * 返回：表单列表和分页信息
  */
-router.get('/my-forms', authMiddleware, async (req, res) => {
+router.get('/my-forms', async (req, res) => {
     try {
         const userId = req.userId;
         // 获取分页参数

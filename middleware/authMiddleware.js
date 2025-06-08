@@ -1,25 +1,23 @@
 import { verifyAccessToken } from '../utils/jwtUtils.js';
 import {error} from '../utils/response.js'
 const authMiddleware = (req, res, next) => {
-    // 从请求头获取token
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        error(res, '未提供token', 401)
-    }
-    // 提取token（去掉Bearer 前缀）
-    const token = authHeader?.split(' ')[1]||'';
+    // 从请求头中提取Token（去掉"Bearer "前缀）
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    // 检查是否提供了Token
     if (!token) {
-        error(res, 'token格式错误', 401)
+        return error(res, '未提供访问令牌', 401);
     }
 
-    // 验证token
+    // 验证Token的有效性，获取用户信息
     const payload = verifyAccessToken(token);
     if (!payload) {
-        error(res, 'token无效或已过期', 401)
+        return error(res, '访问令牌无效或已过期', 401);
     }
 
-    // 将用户信息添加到请求对象
-    req.user = payload;
+    // 将用户ID存储到请求对象中，供后续路由使用
+    req.userId = payload.userId;
+    // 继续执行下一个中间件或路由处理函数
     next();
 };
 export default authMiddleware;
