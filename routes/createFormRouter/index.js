@@ -33,7 +33,7 @@ const authMiddleware = (req, res, next) => {
 // 获取创建的表单
 router.get('/create-form', authMiddleware,async (req, res) => {
     try {
-        const raw = await db.select('*').from('forms').where('user_id', req.userId)
+        const raw = await db.select('*').from('forms').where('user_id', req.userId).orderBy('created_at', 'desc')
         raw.forEach(item => {
             item.created_at = item.created_at.toISOString().replace('T', ' ').slice(0, 19);
             item.updated_at = item.updated_at.toISOString().replace('T', ' ').slice(0, 19);
@@ -89,5 +89,57 @@ router.delete('/create-form/:id',authMiddleware,async(req,res)=>{
         return error(res,'删除表单失败',500)
     }
 })
-
+// 表单保存（修改操作）
+router.post('/save-form', authMiddleware, async (req, res) => {
+    try {
+        // 从请求体中获取表单ID和要更新的数据
+        const { id, title, description, form_config } = req.body;
+        
+        // 验证必填字段
+        if (!id) {
+            return error(res, '表单ID不能为空', 400);
+        }
+        
+        if (!title || title.trim() === '') {
+            return error(res, '表单标题不能为空', 400);
+        }
+        
+        // 首先检查表单是否存在且属于当前用户
+        const existingForm = await db('forms')
+            .where('id', id)
+            .where('user_id', req.userId)
+            .first();
+            
+        if (!existingForm) {
+            return error(res, '表单不存在或无权限修改', 404);
+        }
+        
+        // 准备更新的数据
+        const updateData = {
+            title: title.trim(),
+            description: description ? description.trim() : '',
+            updated_at: new Date()
+        };
+        
+        // 如果有表单配置，也一起更新
+        if (form_config) {
+            updateData.form_config = JSON.stringify(form_config);
+        }
+        
+        // 执行更新操作
+        const affectedRows = await db('forms')
+            .where('id', id)
+            .where('user_id', req.userId)
+            .update(updateData);
+            
+        if (affectedRows === 0) {
+            return error(res, '更新失败，表单不存在或无权限', 404);
+        }
+        return success(res, null, '保存表单成功');
+        
+    } catch (err) {
+        console.error('保存表单失败:', err);
+        return error(res, '保存表单失败', 500);
+    }
+});
 export default router;
