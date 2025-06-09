@@ -19,6 +19,7 @@ router.get('/template-form', async (req, res) => {
         });
         const data = raw.map(item => ({
             id: item.id,
+            field:  item.id,
             title: item.title,
             description: item.description,
             usageCount: item.usage_count,
