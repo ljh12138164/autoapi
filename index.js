@@ -9,6 +9,7 @@ import loginRouter from './routes/loginRouter/index.js';
 import dashboardRouter from './routes/dashboardRouter/index.js';
 import createFormRouter from './routes/createFormRouter/index.js';
 import dataManagementRouter from './routes/dataManagementRouter/index.js';
+import templateFormRouter from './routes/templateFormRouter/index.js';
 // 导入关于权限中间件
 import authMiddleware from './middleware/authMiddleware.js';
 import { error } from './utils/response.js';
@@ -45,6 +46,8 @@ app.use('/dashboard',dashboardRouter)
 app.use(dataManagementRouter)
 // 表单设计
 app.use(createFormRouter)
+// 模板表单
+app.use(templateFormRouter)
 // 404处理（放在最后）
 app.use((req, res) => {
   error(res, '接口不存在', 404);
