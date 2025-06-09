@@ -25,8 +25,17 @@ router.get('/template-form', async (req, res) => {
             templateConfig: item.template_config,
             createTime: item.created_at,
             updateTime: item.updated_at,
+            img: item.preview_image
         }));
         return success(res, data, '获取模板表单成功');
+    }catch (err) {
+        error(res, '获取模板表单失败', 500, err);
+    }
+})
+router.post('/template-form-count', async (req, res) => {
+    try {
+       await db('form_templates').where('id', req.body.id).increment('usage_count', 1);
+        return success(res, null, '更新模板表单成功');
     }catch (err) {
         error(res, '获取模板表单失败', 500, err);
     }
