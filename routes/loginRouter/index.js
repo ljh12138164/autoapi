@@ -1,7 +1,7 @@
 import express from 'express';
 import db from "../../config/db.js";
 import { success, error } from "../../utils/response.js";
-import { generateAccessToken, generateRefreshToken,verifyRefreshToken, getCookieOptions } from "../../utils/jwtUtils.js";
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken, getCookieOptions } from "../../utils/jwtUtils.js";
 
 const router = express.Router();
 router.use(express.json());
@@ -18,35 +18,46 @@ router.use(express.urlencoded({ extended: true }));
 
 // 登录
 router.post('/login', (req, res) => {
-    
+
     const { username, password } = req.body;
     if (!username || !password) {
-        error(res, '用户名或密码不能为空', 400);
+        error(res, '用户名/邮箱或密码不能为空', 400);
         return;
     }
-    
-    db('users').where({ username, password }).then((rows) => {
-        if (rows.length > 0) {
-            const user = rows[0];
-            // 生成Access Token和Refresh Token
-            const accessToken = generateAccessToken({ userId: user.id });
-            const refreshToken = generateRefreshToken({ userId: user.id });
-            const data = {
-                accessToken,
-                userInfo:{
-                    id:user.id,
-                    username:user.username,
-                    email:user.email
+
+    // 支持用户名或邮箱登录
+    db('users')
+        .where(function () {
+            this.where('username', username)
+                .orWhere('email', username);
+        })
+        .andWhere('password', password)
+        .then((rows) => {
+            if (rows.length > 0) {
+                const user = rows[0];
+                // 生成Access Token和Refresh Token
+                const accessToken = generateAccessToken({ userId: user.id });
+                const refreshToken = generateRefreshToken({ userId: user.id });
+                const data = {
+                    accessToken,
+                    userInfo: {
+                        id: user.id,
+                        username: user.username,
+                        email: user.email
+                    }
                 }
+                // 将Refresh Token设置到HttpOnly Cookie中
+                res.cookie('refreshToken', refreshToken, getCookieOptions());
+                // 返回Access Token给客户端
+                success(res, data, '登录成功', 200);
+            } else {
+                error(res, '用户名/邮箱或密码错误', 400);
             }
-            // 将Refresh Token设置到HttpOnly Cookie中
-            res.cookie('refreshToken', refreshToken, getCookieOptions());
-            // 返回Access Token给客户端
-            success(res, data, '登录成功', 200);
-        } else {
-            error(res, '用户名或密码错误', 400);
-        }
-    })
+        })
+        .catch((err) => {
+            console.error('登录查询错误:', err);
+            error(res, '登录失败，请稍后重试', 500);
+        });
 });
 
 // 注册
