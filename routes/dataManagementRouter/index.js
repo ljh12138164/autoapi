@@ -1,6 +1,7 @@
 import express from 'express';
 import db from "../../config/db.js";
 import { success, error } from "../../utils/response.js";
+import {transDate} from "../../utils/transDate.js";
 
 const router = express.Router();
 
@@ -66,9 +67,9 @@ router.get('/submit-form', async (req, res) => {
         const submittedDate = row.map(item => ({
             id: item.id,
             title: item.title,
-            submitTime: item.submitted_at.toISOString().replace('T', ' ').slice(0, 19),
-            data: item.submission_data,
+            submitTime:transDate(item.submitted_at),
         }));
+        console.log(submittedDate[0].submitTime);
 
         // 返回成功响应
         return success(res, {
@@ -105,4 +106,25 @@ router.delete('/submit-form', async (req, res) => {
         return error(res, '批量删除失败', 500);
     }
 });
+
+// 提交表单
+router.post('/submit-form', async (req, res) => {
+    try {
+        const data = req.body;
+        const { formId, formData } = data;
+        // 检查表单是否存在
+        // 构建基础查询
+        await db('form_submissions')
+            .join('forms', 'form_submissions.form_id', 'forms.id')
+            .where('form_submissions.user_id', '=', req.userId).insert({
+                form_id: formId,
+                submission_data: JSON.stringify(formData),
+                user_id: req.userId,
+            })
+
+        return success(res, null, '提交表单成功');
+    } catch (err) {
+        console.error('提交表单失败:', err);
+    }
+})
 export default router;

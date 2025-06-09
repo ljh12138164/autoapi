@@ -2,6 +2,7 @@
 import express from 'express';
 import db from "../../config/db.js";
 import { success, error } from "../../utils/response.js";
+import {transDate} from "../../utils/transDate.js";
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ router.get('/create-form', async (req, res) => {
     try {
         const raw = await db.select('*').from('forms').where('user_id', req.userId).orderBy('created_at', 'desc')
         raw.forEach(item => {
-            item.created_at = item.created_at.toISOString().replace('T', ' ').slice(0, 19);
-            item.updated_at = item.updated_at.toISOString().replace('T', ' ').slice(0, 19);
+            item.created_at =transDate(item.created_at);
+            item.updated_at =transDate(item.updated_at);
         });
         const data = raw.map(item => ({
             id: item.id,
@@ -59,7 +60,7 @@ router.post('/create-form', async (req, res) => {
     }
 });
 // 删除创建表单
-router.delete('/create-form/:id',  async (req, res) => {
+router.delete('/create-form/:id', async (req, res) => {
     const { id } = req.params
     try {
         await db('forms').where("id", id).del()
@@ -130,7 +131,7 @@ router.get('/form/:id', async (req, res) => {
             return error(res, '表单不存在', 404);
         }
         return success(res, form, '获取表单信息成功');
-    }catch (err) {
+    } catch (err) {
         console.error('获取表单信息失败:', err);
         return error(res, '获取表单信息失败', 500);
     }

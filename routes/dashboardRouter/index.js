@@ -2,7 +2,7 @@
 import express from 'express';
 import db from "../../config/db.js";
 import { success, error } from "../../utils/response.js";
-
+import {transDate} from "../../utils/transDate.js";
 const router = express.Router();
 
 router.use(express.json());
@@ -150,7 +150,7 @@ router.get('/recent-activities', async (req, res) => {
             id: activity.id,                                           // 活动ID
             type: 'submission',                                        // 活动类型：提交
             title: `收到新的表单提交`,                                    // 活动标题
-            submittedDate: activity.submitted_at.toISOString().replace('T', ' ').slice(0, 19),                       // 活动时间
+            submittedDate:transDate(activity.submitted_at) ,                       // 活动时间
         }));
 
         success(res, formattedActivities, '获取最近活动成功');
