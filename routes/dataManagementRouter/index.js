@@ -68,9 +68,8 @@ router.get('/submit-form', async (req, res) => {
             id: item.id,
             title: item.title,
             submitTime:transDate(item.submitted_at),
+            data: item.submission_data,
         }));
-        console.log(submittedDate[0].submitTime);
-
         // 返回成功响应
         return success(res, {
             submittedDate,
