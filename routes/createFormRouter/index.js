@@ -120,4 +120,19 @@ router.post('/save-form', async (req, res) => {
         return error(res, '保存表单失败', 500);
     }
 });
+
+// 获取表单信息
+router.get('/form/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const form = await db('forms').where('id', id).first();
+        if (!form) {
+            return error(res, '表单不存在', 404);
+        }
+        return success(res, form, '获取表单信息成功');
+    }catch (err) {
+        console.error('获取表单信息失败:', err);
+        return error(res, '获取表单信息失败', 500);
+    }
+})
 export default router;
