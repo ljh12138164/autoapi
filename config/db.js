@@ -1,13 +1,21 @@
 import knex from 'knex';
+import dotenv from 'dotenv';
+
+// 根据环境加载不同的配置文件
+if (process.env.NODE_ENV === 'production') {
+    dotenv.config({ path: '.env.production' });
+} else {
+    dotenv.config({ path: '.env' });
+}
 
 const db = knex({
     client: 'mysql2',
     connection: {
-        host: '127.0.0.1',
-        port: 3306,
-        user: 'root',
-        password: 'root',
-        database: 'auto_form'
+        host: process.env.DB_HOST || '127.0.0.1',
+        port: parseInt(process.env.DB_PORT) || 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || 'root',
+        database: process.env.DB_NAME || 'auto_form'
     },
     pool: {
         min: 2,

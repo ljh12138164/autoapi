@@ -23,7 +23,18 @@ const excludePaths = [
 ];
 const app = express();
 // 解决跨域问题
-app.use(cors());
+// 根据环境加载配置
+if (process.env.NODE_ENV === 'production') {
+    dotenv.config({ path: '.env.production' });
+} else {
+    dotenv.config({ path: '.env' });
+}
+
+// CORS 配置
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'],
+    credentials: true
+}));
 // 解析请求体
 app.use(bodyParser.json());
 // 解析请求体
