@@ -13,20 +13,49 @@ router.use(express.urlencoded({ extended: true }));
 // 获取创建的表单
 router.get('/create-form', async (req, res) => {
     try {
-        const raw = await db.select('*').from('forms').where('user_id', req.userId).orderBy('created_at', 'desc')
+        // 获取分页参数，设置默认值
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = parseInt(req.query.pageSize) || 10;
+        const offset = (page - 1) * pageSize;
+        
+        // 查询总数
+        const totalResult = await db('forms')
+            .where('user_id', req.userId)
+            .count('id as total')
+            .first();
+        const total = totalResult.total;
+        
+        // 分页查询数据
+        const raw = await db.select('*')
+            .from('forms')
+            .where('user_id', req.userId)
+            .orderBy('created_at', 'desc')
+            .limit(pageSize)
+            .offset(offset);
+            
         raw.forEach(item => {
-            item.created_at =transDate(item.created_at);
-            item.updated_at =transDate(item.updated_at);
+            item.created_at = transDate(item.created_at);
+            item.updated_at = transDate(item.updated_at);
         });
-        const data = raw.map(item => ({
+        
+        const createData = raw.map(item => ({
             id: item.id,
             title: item.title,
             description: item.description,
             createTime: item.created_at,
             updateTime: item.updated_at,
+            submitCount: item.submission_count,
         }));
-        success(res, data, '获取创建的表单成功');
+        
+        // 返回分页信息
+        success(res, {
+            createData,
+            total,
+            page,
+            pageSize,
+        }, '获取创建的表单成功');
     } catch (error) {
+        console.error('获取创建的表单失败:', error);
         error(res, '获取创建的表单失败', 500, error);
     }
 });
