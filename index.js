@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // CORS 配置
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
     credentials: true
 }));
 // 解析请求体
