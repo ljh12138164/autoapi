@@ -12,3 +12,4 @@ build/
 # 编辑器/IDE 配置
 .vscode/
 .idea/
+.vercel

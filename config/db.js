@@ -9,6 +9,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 const db = knex({
   client: 'pg',
+  // TODO: 修改为本地数据库
   connection: {
     host: 'aws-0-ap-southeast-1.pooler.supabase.com',
     port: 5432,
